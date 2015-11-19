@@ -81,14 +81,13 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
             [self.commandDelegate sendPluginResult:pluginResult callbackId:command.callbackId];
         });
     });
+}
 
 @end
 
 @implementation FileOpener2 (UIDocumentInteractionControllerDelegate)
 - (UIViewController *)documentInteractionControllerViewControllerForPreview:(UIDocumentInteractionController *)controller {
 	return self.cdvViewController;
-}
-
 }
 
 @end
