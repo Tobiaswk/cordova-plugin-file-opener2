@@ -35,6 +35,7 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
     //NSString *uti = [command.arguments objectAtIndex:1];
 
     CDVViewController* cont = (CDVViewController*)[ super viewController ];
+    self.cdvViewController = cont;
 
     NSArray *dotParts = [path componentsSeparatedByString:@"."];
     NSString *fileExt = [dotParts lastObject];
@@ -59,7 +60,8 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
             CGRect rect = CGRectMake(0, 0, 1000.0f, 150.0f);
             CDVPluginResult* pluginResult = nil;
-            BOOL wasOpened = [docController presentOptionsMenuFromRect:rect inView:cont.view animated:NO];
+            BOOL wasOpened = [docController presentPreviewAnimated: NO];
+
             //presentOptionsMenuFromRect
             //presentOpenInMenuFromRect
 
@@ -79,6 +81,14 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
             [self.commandDelegate sendPluginResult:pluginResult callbackId:command.callbackId];
         });
     });
+
+@end
+
+@implementation FileOpener2 (UIDocumentInteractionControllerDelegate)
+- (UIViewController *)documentInteractionControllerViewControllerForPreview:(UIDocumentInteractionController *)controller {
+	return self.cdvViewController;
+}
+
 }
 
 @end
