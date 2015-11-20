@@ -1,25 +1,25 @@
 /*
-The MIT License (MIT)
+   The MIT License (MIT)
 
-Copyright (c) 2013 pwlin - pwlin05@gmail.com
+   Copyright (c) 2013 pwlin - pwlin05@gmail.com
 
-Permission is hereby granted, free of charge, to any person obtaining a copy of
-this software and associated documentation files (the "Software"), to deal in
-the Software without restriction, including without limitation the rights to
-use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of
-the Software, and to permit persons to whom the Software is furnished to do so,
-subject to the following conditions:
+   Permission is hereby granted, free of charge, to any person obtaining a copy of
+   this software and associated documentation files (the "Software"), to deal in
+   the Software without restriction, including without limitation the rights to
+   use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of
+   the Software, and to permit persons to whom the Software is furnished to do so,
+   subject to the following conditions:
 
-The above copyright notice and this permission notice shall be included in all
-copies or substantial portions of the Software.
+   The above copyright notice and this permission notice shall be included in all
+   copies or substantial portions of the Software.
 
-THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS
-FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR
-COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER
-IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
-CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
-*/
+   THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+   IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS
+   FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR
+   COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER
+   IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
+   CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+   */
 #import "FileOpener2.h"
 #import <Cordova/CDV.h>
 
@@ -31,63 +31,74 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 - (void) open: (CDVInvokedUrlCommand*)command {
 
-    NSString *path = [[command.arguments objectAtIndex:0] stringByAddingPercentEscapesUsingEncoding:NSUTF8StringEncoding];
-    //NSString *uti = [command.arguments objectAtIndex:1];
+	NSString *path = [[command.arguments objectAtIndex:0] stringByAddingPercentEscapesUsingEncoding:NSUTF8StringEncoding];
+	NSString *contentType = nil;
 
-    CDVViewController* cont = (CDVViewController*)[ super viewController ];
-    self.cdvViewController = cont;
+	if([command.arguments count] == 2) { // Includes contentType
+		contentType = [command.arguments objectAtIndex:1];
+	}
 
-    NSArray *dotParts = [path componentsSeparatedByString:@"."];
-    NSString *fileExt = [dotParts lastObject];
-	//NSString *fileExt = [[dotparts lastObject] stringByReplacingPercentEscapesUsingEncoding:NSUTF8StringEncoding];
+	CDVViewController* cont = (CDVViewController*)[ super viewController ];
+	self.cdvViewController = cont;
+
+	NSArray *dotParts = [path componentsSeparatedByString:@"."];
+	NSString *fileExt = [dotParts lastObject];
 
 	NSString *uti = (__bridge NSString *)UTTypeCreatePreferredIdentifierForTag(kUTTagClassFilenameExtension, (__bridge CFStringRef)fileExt, NULL);
 
-    dispatch_async(dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_DEFAULT, 0), ^{
-        //NSLog(@"path %@, uti:%@", path, uti);
-        NSURL *fileURL = nil;
+	BOOL isPdf = NO;
 
-        //fileURL = [NSURL URLWithString:path];
-        fileURL = [NSURL URLWithString:path];
-        //NSLog(@"%@",fileURL);
-        localFile = fileURL.path;
+	if(contentType) {
+		if([contentType isEqualToString: @"application/pdf"]) {
+			isPdf = YES;
+		}
+	}
 
-        dispatch_async(dispatch_get_main_queue(), ^{
+	dispatch_async(dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_DEFAULT, 0), ^{
+			//NSLog(@"path %@, uti:%@", path, uti);
+			NSURL *fileURL = nil;
 
-            docController = [UIDocumentInteractionController  interactionControllerWithURL:fileURL];
-            docController.delegate = self;
-            docController.UTI = uti;
+			//fileURL = [NSURL URLWithString:path];
+			fileURL = [NSURL URLWithString:path];
+			//NSLog(@"%@",fileURL);
+			localFile = fileURL.path;
 
-            CGRect rect = CGRectMake(0, 0, 1000.0f, 150.0f);
-            CDVPluginResult* pluginResult = nil;
-            BOOL wasOpened = [docController presentPreviewAnimated: NO];
+			dispatch_async(dispatch_get_main_queue(), ^{
 
-            //presentOptionsMenuFromRect
-            //presentOpenInMenuFromRect
+					docController = [UIDocumentInteractionController  interactionControllerWithURL:fileURL];
+					docController.delegate = self;
+					docController.UTI = uti;
 
-            if(wasOpened) {
-                pluginResult = [CDVPluginResult resultWithStatus:CDVCommandStatus_OK messageAsString: @""];
-                //NSLog(@"Success");
-            } else {
-                NSDictionary *jsonObj = [ [NSDictionary alloc]
-                                         initWithObjectsAndKeys :
-                                         @"9", @"status",
-                                         @"Could not handle UTI", @"message",
-                                         nil
-                                         ];
-                pluginResult = [CDVPluginResult resultWithStatus:CDVCommandStatus_ERROR messageAsDictionary:jsonObj];
-                //NSLog(@"Could not handle UTI");
-            }
-            [self.commandDelegate sendPluginResult:pluginResult callbackId:command.callbackId];
-        });
-    });
+					CGRect rect = CGRectMake(0, 0, 1000.0f, 150.0f);
+					CDVPluginResult* pluginResult = nil;
+					BOOL wasOpened = isPdf ? [docController presentPreviewAnimated: NO] : [docController presentOptionsMenuFromRect:rect inView:cont.view animated:NO];
+
+					//presentOptionsMenuFromRect
+					//presentOpenInMenuFromRect
+
+					if(wasOpened) {
+					pluginResult = [CDVPluginResult resultWithStatus:CDVCommandStatus_OK messageAsString: @""];
+					//NSLog(@"Success");
+					} else {
+					NSDictionary *jsonObj = [ [NSDictionary alloc]
+					initWithObjectsAndKeys :
+					@"9", @"status",
+					@"Could not handle UTI", @"message",
+					nil
+					];
+					pluginResult = [CDVPluginResult resultWithStatus:CDVCommandStatus_ERROR messageAsDictionary:jsonObj];
+					//NSLog(@"Could not handle UTI");
+					}
+					[self.commandDelegate sendPluginResult:pluginResult callbackId:command.callbackId];
+			});
+	});
 }
 
 @end
 
 @implementation FileOpener2 (UIDocumentInteractionControllerDelegate)
-- (UIViewController *)documentInteractionControllerViewControllerForPreview:(UIDocumentInteractionController *)controller {
-	return self.cdvViewController;
-}
+	- (UIViewController *)documentInteractionControllerViewControllerForPreview:(UIDocumentInteractionController *)controller {
+		return self.cdvViewController;
+	}
 
 @end
